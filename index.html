@@ -4,28 +4,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot</title>
+    <title>Chatbot - IA Inteligente</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <h1>Chatbot com Html e Javascript 🤖</h1>
-    <p id="resposta"></p>
-    <input id="mensagem" placeholder="Digite sua mensagem" />
-    <button id="enviar" onclick="responder()">Enviar</button>
+    <div class="chatbot-container">
+        <!-- Header -->
+        <div class="chatbot-header">
+            <h1>Chatbot com IA 🤖</h1>
+            <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">🌙 Escuro</button>
+        </div>
+
+        <!-- Área de Mensagens -->
+        <div class="messages-container" id="messages-container"></div>
+
+        <!-- Área de Input -->
+        <div class="input-container">
+            <input id="mensagem" type="text" placeholder="Digite sua mensagem..." onkeypress="handleKeyPress(event)" />
+            <button id="enviar" onclick="responder()">Enviar</button>
+        </div>
+    </div>
 
     <script>
-        const botao_enviar = document.getElementById("enviar");
+        // ====================================
+        // GERENCIAMENTO DE TEMA
+        // ====================================
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeButton();
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeButton();
+        }
+
+        function updateThemeButton() {
+            const btn = document.getElementById('theme-btn');
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            btn.textContent = currentTheme === 'light' ? '🌙 Escuro' : '☀️ Claro';
+        }
+
+        // ====================================
+        // GERENCIAMENTO DE MENSAGENS
+        // ====================================
+
+        const messagesContainer = document.getElementById('messages-container');
+        const messageInput = document.getElementById('mensagem');
+        const sendButton = document.getElementById('enviar');
+
+        function addMessage(text, sender = 'user') {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `message-wrapper ${sender}`;
+
+            const message = document.createElement('div');
+            message.className = `message ${sender}`;
+            message.textContent = text;
+
+            messageWrapper.appendChild(message);
+            messagesContainer.appendChild(messageWrapper);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function addLoadingMessage() {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = 'message-wrapper bot';
+            messageWrapper.id = 'loading-message';
+
+            const message = document.createElement('div');
+            message.className = 'message bot loading';
+
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                message.appendChild(dot);
+            }
+
+            messageWrapper.appendChild(message);
+            messagesContainer.appendChild(messageWrapper);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function removeLoadingMessage() {
+            const loadingMsg = document.getElementById('loading-message');
+            if (loadingMsg) {
+                loadingMsg.remove();
+            }
+        }
+
+        // ====================================
+        // LÓGICA DO CHATBOT
+        // ====================================
+
         function responder() {
-            const texto = document.getElementById("mensagem").value.toLowerCase();
+            const texto = messageInput.value.toLowerCase().trim();
+
+            if (!texto) return;
+
+            // Adicionar mensagem do usuário
+            addMessage(messageInput.value, 'user');
+            messageInput.value = '';
+
             let resposta = "";
 
             if (texto.includes("oi")) {
-                resposta = "Olá, Seja bem-vindo(a)!";
+                resposta = "Olá, Seja bem-vindo(a)! 👋";
+                addMessage(resposta, 'bot');
             } else if (texto.includes("curso")) {
-                resposta = "Sou um chatbot feito para estudos!";
+                resposta = "Sou um chatbot feito para estudos! 📚";
+                addMessage(resposta, 'bot');
             } else if (texto.includes("ollama")) {
                 const prompt = texto.replace("ollama", "").trim();
-                botao_enviar.disabled = true;
+
+                if (!prompt) {
+                    addMessage("Por favor, digite a sua pergunta após 'ollama'", 'bot');
+                    return;
+                }
+
+                sendButton.disabled = true;
+                addLoadingMessage();
+
                 fetch("http://localhost:11434/api/generate", {
                     method: "POST",
                     headers: {
@@ -37,25 +142,47 @@
                         stream: false
                     })
                 })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
-                        resposta = data.response;
-                        document.getElementById("resposta").innerText = resposta;
-                        botao_enviar.disabled = false;
+                        removeLoadingMessage();
+                        addMessage(data.response, 'bot');
+                        sendButton.disabled = false;
                     })
                     .catch(error => {
-                        resposta = "Erro ao conectar com o Ollama: " + error.message;
-                        document.getElementById("resposta").innerText = resposta;
-                        botao_enviar.disabled = false;
-
+                        removeLoadingMessage();
+                        const errorMsg = "❌ Erro ao conectar com o Ollama: " + error.message;
+                        addMessage(errorMsg, 'bot');
+                        sendButton.disabled = false;
                     });
-                resposta = "Processando sua solicitação com o Ollama...";
             } else {
-                resposta = "Ainda estou aprendendo 🤖";
+                resposta = "Ainda estou aprendendo 🤖 Tente começar com 'oi', 'curso' ou 'ollama'";
+                addMessage(resposta, 'bot');
             }
 
-            document.getElementById("resposta").innerText = resposta;
+            messageInput.focus();
         }
+
+        // ====================================
+        // EVENT LISTENERS
+        // ====================================
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                responder();
+            }
+        }
+
+        // Inicializar ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            messageInput.focus();
+        });
     </script>
 
 </body>
