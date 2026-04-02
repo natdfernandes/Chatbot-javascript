@@ -1,27 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Chatbot</title>
 </head>
 
 <body>
     <h1>Chatbot com Html e Javascript 🤖</h1>
     <p id="resposta"></p>
+    <input id="mensagem" placeholder="Digite sua mensagem" />
+    <button id="enviar" onclick="responder()">Enviar</button>
 
     <script>
+        const botao_enviar = document.getElementById("enviar");
         function responder() {
             const texto = document.getElementById("mensagem").value.toLowerCase();
             let resposta = "";
 
             if (texto.includes("oi")) {
-                resposta = "Oi! Seja bem-vinda 😊";
+                resposta = "Olá, Seja bem-vindo(a)!";
             } else if (texto.includes("curso")) {
                 resposta = "Sou um chatbot feito para estudos!";
             } else if (texto.includes("ollama")) {
                 const prompt = texto.replace("ollama", "").trim();
+                botao_enviar.disabled = true;
                 fetch("http://localhost:11434/api/generate", {
                     method: "POST",
                     headers: {
@@ -37,12 +41,15 @@
                     .then(data => {
                         resposta = data.response;
                         document.getElementById("resposta").innerText = resposta;
+                        botao_enviar.disabled = false;
                     })
                     .catch(error => {
                         resposta = "Erro ao conectar com o Ollama: " + error.message;
                         document.getElementById("resposta").innerText = resposta;
+                        botao_enviar.disabled = false;
+
                     });
-                return;
+                resposta = "Processando sua solicitação com o Ollama...";
             } else {
                 resposta = "Ainda estou aprendendo 🤖";
             }
@@ -54,5 +61,3 @@
 </body>
 
 </html>
-<input id="mensagem" placeholder="Digite sua mensagem" />
-<button onclick="responder()">Enviar</button>
