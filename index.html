@@ -20,11 +20,29 @@
                 resposta = "Oi! Seja bem-vinda 😊";
             } else if (texto.includes("curso")) {
                 resposta = "Sou um chatbot feito para estudos!";
-                //Adicionar um else if com a condição texto.includes("ollama")
-                //dentro desse if fazer uma requisição  utilizando featch para a api do ollama
-                //O modelo vai ser phi3:mini , url vai ser http://localhost:11434/api/generate
-                // O prompet vai ser o texxto digitado excluindo a parte do Ollama
-                //O corpo da requisição deve conter os atributos model, prompt e stream=false
+            } else if (texto.includes("ollama")) {
+                const prompt = texto.replace("ollama", "").trim();
+                fetch("http://localhost:11434/api/generate", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "phi3:mini",
+                        prompt: prompt,
+                        stream: false
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        resposta = data.response;
+                        document.getElementById("resposta").innerText = resposta;
+                    })
+                    .catch(error => {
+                        resposta = "Erro ao conectar com o Ollama: " + error.message;
+                        document.getElementById("resposta").innerText = resposta;
+                    });
+                return;
             } else {
                 resposta = "Ainda estou aprendendo 🤖";
             }
